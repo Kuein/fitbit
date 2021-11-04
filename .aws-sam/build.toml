@@ -41,4 +41,20 @@ manifest_hash = ""
 packagetype = "Zip"
 functions = ["LandingPage"]
 
+[function_build_definitions.e09bfdd8-5ffe-4fdf-9a6d-dc93c4d3feac]
+codeuri = "/Users/alex/Projects/fitbit/user_management"
+runtime = "go1.x"
+architecture = "x86_64"
+manifest_hash = ""
+packagetype = "Zip"
+functions = ["UserManagement"]
+
+[function_build_definitions.273f80b3-4eb3-4b01-be19-f5b2369c2aea]
+codeuri = "/Users/alex/Projects/fitbit/profile"
+runtime = "go1.x"
+architecture = "x86_64"
+manifest_hash = ""
+packagetype = "Zip"
+functions = ["ProfileManagement"]
+
 [layer_build_definitions]

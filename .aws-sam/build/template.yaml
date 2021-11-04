@@ -1,23 +1,51 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: 'fitbit
-
-  Sample SAM Template for fitbit
-
-  '
 Globals:
   Function:
     Timeout: 5
+    Handler: handler
+    Runtime: go1.x
+    Architectures:
+    - x86_64
+    Tracing: Active
 Resources:
+  UserManagement:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: UserManagement
+      Policies:
+        DynamoDBCrudPolicy:
+          TableName: Fitbit
+      Events:
+        SignUp:
+          Type: Api
+          Properties:
+            Path: /signup
+            Method: Post
+        Login:
+          Type: Api
+          Properties:
+            Path: /login
+            Method: Post
+  ProfileManagement:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ProfileManagement
+      Events:
+        ReadProfile:
+          Type: Api
+          Properties:
+            Path: /profile
+            Method: Get
+        UpdateProfile:
+          Type: Api
+          Properties:
+            Path: /profile
+            Method: Post
   TermsOfService:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: TermsOfService
-      Handler: handler
-      Runtime: go1.x
-      Architectures:
-      - x86_64
-      Tracing: Active
       Events:
         CatchAll:
           Type: Api
@@ -28,11 +56,6 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: LandingPage
-      Handler: handler
-      Runtime: go1.x
-      Architectures:
-      - x86_64
-      Tracing: Active
       Events:
         CatchAll:
           Type: Api
@@ -43,11 +66,6 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: Oauth
-      Handler: handler
-      Runtime: go1.x
-      Architectures:
-      - x86_64
-      Tracing: Active
       Events:
         GetCode:
           Type: Api
@@ -63,11 +81,6 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: PrivacyPolicy
-      Handler: handler
-      Runtime: go1.x
-      Architectures:
-      - x86_64
-      Tracing: Active
       Events:
         CatchAll:
           Type: Api
@@ -78,11 +91,6 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: WebhookData
-      Handler: handler
-      Runtime: go1.x
-      Architectures:
-      - x86_64
-      Tracing: Active
       Events:
         CatchAll:
           Type: Api

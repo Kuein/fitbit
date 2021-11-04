@@ -1,9 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: >
-  fitbit
-  
-  Sample SAM Template for fitbit
 
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
@@ -11,7 +7,7 @@ Globals:
     Timeout: 5
     Handler: handler
     Runtime: go1.x
-    Architecture:
+    Architectures:
       - x86_64
     Tracing: Active
 
@@ -20,6 +16,9 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: user_management/
+      Policies:
+        DynamoDBCrudPolicy:
+          TableName: Fitbit
       Events:
         SignUp:
           Type: Api
