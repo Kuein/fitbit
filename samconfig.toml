@@ -1,0 +1,10 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "fitbit"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-oryhm022mkbj"
+s3_prefix = "fitbit"
+region = "eu-central-1"
+capabilities = "CAPABILITY_IAM"
+image_repositories = []

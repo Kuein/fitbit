@@ -1,0 +1,111 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  fitbit
+  
+  Sample SAM Template for fitbit
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 5
+    Handler: handler
+    Runtime: go1.x
+    Architecture:
+      - x86_64
+    Tracing: Active
+
+Resources:
+  UserManagement:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: user_management/
+      Events:
+        SignUp:
+          Type: Api
+          Properties:
+            Path: /signup
+            Method: Post
+        Login:
+          Type: Api
+          Properties:
+            Path: /login
+            Method: Post
+
+
+  ProfileManagement:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: profile/
+      Events:
+        ReadProfile:
+          Type: Api
+          Properties:
+            Path: /profile
+            Method: Get
+        UpdateProfile:
+          Type: Api
+          Properties:
+            Path: /profile
+            Method: Post
+
+
+  TermsOfService:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: terms/
+      Events:
+        CatchAll:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /terms
+            Method: GET
+
+  LandingPage:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: application_website/
+      Events:
+        CatchAll:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /
+            Method: GET
+
+  Oauth:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: webhook_oauth/
+      Events:
+        GetCode:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /auth_code
+            Method: GET
+        Token:
+          Type: Api
+          Properties:
+            Path: /webhook
+            Method: GET
+
+  PrivacyPolicy:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: privacy/
+      Events:
+        CatchAll:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /privacy
+            Method: GET
+
+  WebhookData:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: webhook_data/
+      Events:
+        CatchAll:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /webhook_data
+            Method: POST

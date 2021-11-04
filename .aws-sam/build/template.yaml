@@ -1,0 +1,91 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'fitbit
+
+  Sample SAM Template for fitbit
+
+  '
+Globals:
+  Function:
+    Timeout: 5
+Resources:
+  TermsOfService:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: TermsOfService
+      Handler: handler
+      Runtime: go1.x
+      Architectures:
+      - x86_64
+      Tracing: Active
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            Path: /terms
+            Method: GET
+  LandingPage:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: LandingPage
+      Handler: handler
+      Runtime: go1.x
+      Architectures:
+      - x86_64
+      Tracing: Active
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            Path: /
+            Method: GET
+  Oauth:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: Oauth
+      Handler: handler
+      Runtime: go1.x
+      Architectures:
+      - x86_64
+      Tracing: Active
+      Events:
+        GetCode:
+          Type: Api
+          Properties:
+            Path: /auth_code
+            Method: GET
+        Token:
+          Type: Api
+          Properties:
+            Path: /webhook
+            Method: GET
+  PrivacyPolicy:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: PrivacyPolicy
+      Handler: handler
+      Runtime: go1.x
+      Architectures:
+      - x86_64
+      Tracing: Active
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            Path: /privacy
+            Method: GET
+  WebhookData:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: WebhookData
+      Handler: handler
+      Runtime: go1.x
+      Architectures:
+      - x86_64
+      Tracing: Active
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            Path: /webhook_data
+            Method: POST
