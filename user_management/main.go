@@ -1,8 +1,9 @@
 package main
 
 import (
-	"encoding/json"
+	"embed"
 	"fmt"
+	"net/url"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -12,12 +13,18 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 )
 
+var f embed.FS
+
 // TODO: ProfilePage and ErronPage
+//go:embed signup.page.tmpl
+var signupPage string
+
+//go:embed login.page.tmpl
+var loginPage string
 
 const (
-	tableName   = "Fitbit"
-	ProfilePage = ""
-	ErrorPage   = ""
+	tableName = "Fitbit"
+	ErrorPage = ""
 )
 
 type User struct {
@@ -28,17 +35,37 @@ type User struct {
 var svc = dynamodb.New(session.New())
 
 func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	// TODO: render signup page
-	// TODO: render login page
-	switch request.Path {
-	case "/signup":
+	pageKey := request.HTTPMethod + " " + request.Path
+	switch pageKey {
+	case "GET /signup":
+		{
+			return events.APIGatewayProxyResponse{
+				StatusCode: 200,
+				Headers: map[string]string{
+					"Content-Type": "text/html; charset=UTF-8",
+				},
+				Body: signupPage,
+			}, nil
+		}
+	case "GET /login":
+		{
+			return events.APIGatewayProxyResponse{
+				StatusCode: 200,
+				Headers: map[string]string{
+					"Content-Type": "text/html; charset=UTF-8",
+				},
+				Body: loginPage,
+			}, nil
+		}
+	case "POST /signup":
 		// TODO: hash password
 		// TODO: check users for existence
 		// TODO: confirm user somehow
 		{
-			userData := User{}
-			if err := json.Unmarshal([]byte(request.Body), &userData); err != nil {
-				return events.APIGatewayProxyResponse{}, err
+			vals, _ := url.ParseQuery(request.Body)
+			userData := User{
+				Username: vals["username"][0],
+				Password: vals["password"][0],
 			}
 			input := &dynamodb.PutItemInput{
 				Item: map[string]*dynamodb.AttributeValue{
@@ -58,17 +85,18 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 
 			return events.APIGatewayProxyResponse{
 				StatusCode: 301,
-				Headers:    map[string]string{"Location": ProfilePage},
+				Headers:    map[string]string{"Location": "/Prod/profile/" + userData.Username},
 			}, nil
 
 		}
-	case "/login":
+	case "POST /login":
 		// TODO: hash password
 		// TODO: implement 2FA
 		{
-			userData := User{}
-			if err := json.Unmarshal([]byte(request.Body), &userData); err != nil {
-				return events.APIGatewayProxyResponse{}, err
+			vals, _ := url.ParseQuery(request.Body)
+			userData := User{
+				Username: vals["username"][0],
+				Password: vals["password"][0],
 			}
 			input := &dynamodb.GetItemInput{
 				Key: map[string]*dynamodb.AttributeValue{
@@ -96,7 +124,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 
 			return events.APIGatewayProxyResponse{
 				StatusCode: 301,
-				Headers:    map[string]string{"Location": ProfilePage},
+				Headers:    map[string]string{"Location": "/Prod/profile/" + userData.Username},
 			}, nil
 
 		}

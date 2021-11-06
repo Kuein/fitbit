@@ -25,6 +25,16 @@ Resources:
           Properties:
             Path: /signup
             Method: Post
+        RenderSignup:
+          Type: Api
+          Properties:
+            Path: /signup
+            Method: Get
+        RenderLogin:
+          Type: Api
+          Properties:
+            Path: /login
+            Method: Get
         Login:
           Type: Api
           Properties:
@@ -36,16 +46,19 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: profile/
+      Policies:
+        DynamoDBCrudPolicy:
+          TableName: Fitbit
       Events:
         ReadProfile:
           Type: Api
           Properties:
-            Path: /profile
+            Path: /profile/{username}
             Method: Get
         UpdateProfile:
           Type: Api
           Properties:
-            Path: /profile
+            Path: /profile/{username}
             Method: Post
 
 
