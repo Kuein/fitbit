@@ -16,10 +16,10 @@ import (
 var f embed.FS
 
 // TODO: ProfilePage and ErronPage
-//go:embed signup.page.tmpl
+//go:embed signup.page.tmpl.html
 var signupPage string
 
-//go:embed login.page.tmpl
+//go:embed login.page.tmpl.html
 var loginPage string
 
 const (

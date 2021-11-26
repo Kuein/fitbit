@@ -79,6 +79,9 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: Oauth
+      Policies:
+        DynamoDBCrudPolicy:
+          TableName: Fitbit
       Events:
         GetCode:
           Type: Api
@@ -110,3 +113,8 @@ Resources:
           Properties:
             Path: /webhook_data
             Method: POST
+        GetRequest:
+          Type: Api
+          Properties:
+            Path: /webhook_data
+            Method: GET

@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"embed"
-	"fmt"
 	"text/template"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -16,7 +15,7 @@ import (
 
 var f embed.FS
 
-//go:embed profile.page.tmpl
+//go:embed profile.page.tmpl.html
 var profilePage string
 
 const (
@@ -29,12 +28,13 @@ type AuthToken struct {
 }
 
 type Profile struct {
-	Experience int      `dynamodbav: "experience"`
-	Attack     int      `dynamodbav: "attack"`
-	Defense    int      `dynamodbav: "defence"`
-	Skill      []string `dynamodbav: "skills"`
-	Username   string   `dynamodbav: "primary"`
-	Picture    string   `dynamodbav: "picture"`
+	Experience int    `dynamodbav: "experience"`
+	Attack     int    `dynamodbav: "attack"`
+	Defense    int    `dynamodbav: "defence"`
+	HP         int    `dynamodbav: "hp"`
+	Username   string `dynamodbav: "primary"`
+	Picture    string `dynamodbav: "picture"`
+	FitBit     bool
 }
 
 var svc = dynamodb.New(session.New())
@@ -66,9 +66,9 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 					StatusCode: 500,
 				}, err
 			}
-			fmt.Println(actual)
 			var buf bytes.Buffer
 			t, _ := template.New("profile").Parse(profilePage)
+			_, actual.FitBit = result.Item["fitbit_auth"]
 			t.Execute(&buf, actual)
 			return events.APIGatewayProxyResponse{
 				StatusCode: 200,

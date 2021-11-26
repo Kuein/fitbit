@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -10,6 +11,10 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 )
 
 const (
@@ -17,6 +22,15 @@ const (
 	clientSecret = "dabf4bc970ad5d9d709f096da275000b"
 	redirect     = "https://5w8t9dch57.execute-api.eu-central-1.amazonaws.com/Prod/webhook"
 )
+
+var svc = dynamodb.New(session.New())
+
+type Auth struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	UserId       string `json:"user_id"`
+	Scope        string `json:"scope"`
+}
 
 func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	switch request.Path {
@@ -32,7 +46,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 			}
 			q := url.URL.Query()
 			q.Add("client_id", clientId)
-			q.Add("scope", "weight profile nutrition activity sleep")
+			q.Add("scope", "settings weight profile nutrition activity sleep")
 			q.Add("redirect_url", redirect)
 			q.Add("response_type", "code")
 			url.URL.RawQuery = q.Encode()
@@ -81,9 +95,44 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 				return events.APIGatewayProxyResponse{}, err
 			}
 
+			auth := Auth{}
+			err = json.Unmarshal(data, &auth)
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+			av, err := dynamodbattribute.MarshalMap(auth)
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+
+			input := &dynamodb.UpdateItemInput{
+				Key: map[string]*dynamodb.AttributeValue{
+					"primary":   {S: aws.String("Kuein")},
+					"secondary": {S: aws.String("profile")},
+				},
+				UpdateExpression: aws.String("set fitbit_auth = :fitbit_auth"),
+				ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+					":fitbit_auth": {M: av},
+				},
+				TableName: aws.String("Fitbit"),
+			}
+			_, err = svc.UpdateItem(input)
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+			// create subscription
+			url, err = http.NewRequest("POST", "https://api.fitbit.com/1/user/"+auth.UserId+"/activities/apiSubscriptions/"+auth.UserId+".json", strings.NewReader(v.Encode()))
+			url.Header.Add("Authorization", "Bearer "+auth.AccessToken)
+			url.Header.Add("Content-Type", "application/json")
+			res, err = c.Do(url)
+			if err != nil {
+				fmt.Println(err)
+				return events.APIGatewayProxyResponse{}, err
+			}
+			fmt.Println(res)
 			return events.APIGatewayProxyResponse{
-				Body:       fmt.Sprintf("Get response:\n%v\n", string(data)),
-				StatusCode: 200,
+				StatusCode: 301,
+				Headers:    map[string]string{"Location": "/Prod/profile/Kuein"},
 			}, nil
 
 		}
