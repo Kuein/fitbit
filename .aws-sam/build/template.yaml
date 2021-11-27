@@ -107,6 +107,9 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: WebhookData
+      Policies:
+        DynamoDBCrudPolicy:
+          TableName: Fitbit
       Events:
         CatchAll:
           Type: Api

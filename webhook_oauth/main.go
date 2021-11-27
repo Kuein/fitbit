@@ -110,9 +110,10 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 					"primary":   {S: aws.String("Kuein")},
 					"secondary": {S: aws.String("profile")},
 				},
-				UpdateExpression: aws.String("set fitbit_auth = :fitbit_auth"),
+				UpdateExpression: aws.String("set fitbit_auth = :fitbit_auth user_id = :user_id"),
 				ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 					":fitbit_auth": {M: av},
+					":user_id":     {S: aws.String(auth.UserId)},
 				},
 				TableName: aws.String("Fitbit"),
 			}
@@ -121,7 +122,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 				return events.APIGatewayProxyResponse{}, err
 			}
 			// create subscription
-			url, err = http.NewRequest("POST", "https://api.fitbit.com/1/user/"+auth.UserId+"/activities/apiSubscriptions/"+auth.UserId+".json", strings.NewReader(v.Encode()))
+			url, err = http.NewRequest("POST", "https://api.fitbit.com/1/user/"+auth.UserId+"/activities/apiSubscriptions/"+auth.UserId+".json", nil)
 			url.Header.Add("Authorization", "Bearer "+auth.AccessToken)
 			url.Header.Add("Content-Type", "application/json")
 			res, err = c.Do(url)
