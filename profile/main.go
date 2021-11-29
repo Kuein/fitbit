@@ -17,7 +17,7 @@ import (
 
 var f embed.FS
 
-//go:embed profile.page.tmpl.html
+//go:embed profile.html
 var profilePage string
 
 const (
@@ -42,6 +42,7 @@ type Profile struct {
 var svc = dynamodb.New(session.New())
 
 func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	fmt.Println(request)
 	username := request.PathParameters["username"]
 	switch request.HTTPMethod {
 	case "GET":

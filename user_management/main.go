@@ -16,10 +16,10 @@ import (
 var f embed.FS
 
 // TODO: ProfilePage and ErronPage
-//go:embed signup.page.tmpl.html
+//go:embed signup.html
 var signupPage string
 
-//go:embed login.page.tmpl.html
+//go:embed login.html
 var loginPage string
 
 const (
@@ -35,6 +35,7 @@ type User struct {
 var svc = dynamodb.New(session.New())
 
 func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	fmt.Println(request)
 	pageKey := request.HTTPMethod + " " + request.Path
 	switch pageKey {
 	case "GET /signup":
