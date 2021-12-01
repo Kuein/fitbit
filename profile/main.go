@@ -121,7 +121,9 @@ func handler(request events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPRes
 	default:
 		{
 			arr, _ := base64.StdEncoding.DecodeString(request.Body)
+			fmt.Println(arr)
 			vals, _ := url.ParseQuery(string(arr))
+			fmt.Println(vals)
 			update := map[string]string{
 				"exp": vals["experience"][0],
 				"att": vals["attack"][0],
