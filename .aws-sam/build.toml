@@ -33,14 +33,6 @@ manifest_hash = ""
 packagetype = "Zip"
 functions = ["WebhookData"]
 
-[function_build_definitions.4a921b2d-fcc8-4207-85f8-eee81659c598]
-codeuri = "/Users/alex/Projects/fitbit/application_website"
-runtime = "go1.x"
-architecture = "x86_64"
-manifest_hash = ""
-packagetype = "Zip"
-functions = ["LandingPage"]
-
 [function_build_definitions.e09bfdd8-5ffe-4fdf-9a6d-dc93c4d3feac]
 codeuri = "/Users/alex/Projects/fitbit/user_management"
 runtime = "go1.x"
@@ -56,5 +48,13 @@ architecture = "x86_64"
 manifest_hash = ""
 packagetype = "Zip"
 functions = ["ProfileManagement"]
+
+[function_build_definitions.373e2e35-848f-4161-8eab-67ae522c7ab3]
+codeuri = "/Users/alex/Projects/fitbit/auth"
+runtime = "go1.x"
+architecture = "x86_64"
+manifest_hash = ""
+packagetype = "Zip"
+functions = ["Auth"]
 
 [layer_build_definitions]

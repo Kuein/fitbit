@@ -66,17 +66,17 @@ type Credentials struct {
 	RefreshToken string `dynamodbav:"refresh_token"`
 }
 
-func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	switch request.HTTPMethod {
-	case "GET":
+func handler(request events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
+	switch strings.HasPrefix(request.RouteKey, "GET") {
+	case true:
 		{
 			vc := request.QueryStringParameters["verify"]
 			if vc == "a2ffc806e7c6124256f430fdd384cae41c4a8482898c8460e66a07c3cfd27145" {
-				return events.APIGatewayProxyResponse{
+				return events.APIGatewayV2HTTPResponse{
 					StatusCode: 204,
 				}, nil
 			} else {
-				return events.APIGatewayProxyResponse{
+				return events.APIGatewayV2HTTPResponse{
 					StatusCode: 404,
 				}, nil
 			}
@@ -90,7 +90,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 			err := json.Unmarshal([]byte(request.Body), &activities)
 			if err != nil {
 				fmt.Printf("Unable to marshall activity: %v\n", err)
-				return events.APIGatewayProxyResponse{}, err
+				return events.APIGatewayV2HTTPResponse{}, err
 			}
 			for _, act := range activities {
 				scan_input := &dynamodb.ScanInput{
@@ -103,7 +103,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 				result, err := svc.Scan(scan_input)
 				if err != nil {
 					fmt.Printf("Unable to scan : %v\n", err)
-					return events.APIGatewayProxyResponse{}, err
+					return events.APIGatewayV2HTTPResponse{}, err
 				}
 				if aws.Int64Value(result.Count) == 0 {
 					fmt.Println("User " + act.UserID + " not found")
@@ -131,24 +131,24 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 				res, err := c.Do(refresh)
 				if err != nil {
 					fmt.Printf("http.Do() error: %v\n", err)
-					return events.APIGatewayProxyResponse{}, err
+					return events.APIGatewayV2HTTPResponse{}, err
 				}
 				defer res.Body.Close()
 
 				data, err := ioutil.ReadAll(res.Body)
 				if err != nil {
 					fmt.Printf("ioutil.ReadAll() error: %v\n", err)
-					return events.APIGatewayProxyResponse{}, err
+					return events.APIGatewayV2HTTPResponse{}, err
 				}
 
 				auth := Auth{}
 				err = json.Unmarshal(data, &auth)
 				if err != nil {
-					return events.APIGatewayProxyResponse{}, err
+					return events.APIGatewayV2HTTPResponse{}, err
 				}
 				av, err := dynamodbattribute.MarshalMap(auth)
 				if err != nil {
-					return events.APIGatewayProxyResponse{}, err
+					return events.APIGatewayV2HTTPResponse{}, err
 				}
 
 				uinput := &dynamodb.UpdateItemInput{
@@ -168,7 +168,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 				res, err = c.Do(aurl)
 				if err != nil {
 					fmt.Printf("http.Do() error: %v\n", err)
-					return events.APIGatewayProxyResponse{}, err
+					return events.APIGatewayV2HTTPResponse{}, err
 				}
 				defer res.Body.Close()
 				dec := json.NewDecoder(res.Body)
@@ -176,7 +176,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 				err = dec.Decode(&dailyData)
 				if err != nil {
 					fmt.Println(err)
-					return events.APIGatewayProxyResponse{}, err
+					return events.APIGatewayV2HTTPResponse{}, err
 				}
 				// calculate EXP for day
 				dayEXP := dailyData.Summary.Light + dailyData.Summary.Medium*2 + dailyData.Summary.Heavy*5
@@ -236,7 +236,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 				}
 
 			}
-			return events.APIGatewayProxyResponse{
+			return events.APIGatewayV2HTTPResponse{
 				StatusCode: 200,
 			}, nil
 		}

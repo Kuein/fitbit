@@ -9,6 +9,28 @@ Globals:
     - x86_64
     Tracing: Active
 Resources:
+  ApiGatewayApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Auth:
+        Authorizers:
+          LambdaAuth:
+            AuthorizerPayloadFormatVersion: 2.0
+            FunctionArn:
+              Fn::GetAtt:
+              - Auth
+              - Arn
+            EnableSimpleResponses: true
+            Identity:
+              Headers:
+              - Cookie
+  Auth:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: Auth
+      Policies:
+        DynamoDBCrudPolicy:
+          TableName: Fitbit
   UserManagement:
     Type: AWS::Serverless::Function
     Properties:
@@ -17,25 +39,40 @@ Resources:
         DynamoDBCrudPolicy:
           TableName: Fitbit
       Events:
+        CatchAll:
+          Type: HttpApi
+          Properties:
+            Path: /
+            Method: get
+            ApiId:
+              Ref: ApiGatewayApi
         SignUp:
-          Type: Api
+          Type: HttpApi
           Properties:
             Path: /signup
-            Method: Post
+            ApiId:
+              Ref: ApiGatewayApi
+            Method: post
         RenderSignup:
-          Type: Api
+          Type: HttpApi
           Properties:
+            ApiId:
+              Ref: ApiGatewayApi
             Path: /signup
-            Method: Get
+            Method: get
         RenderLogin:
-          Type: Api
+          Type: HttpApi
           Properties:
             Path: /login
+            ApiId:
+              Ref: ApiGatewayApi
             Method: Get
         Login:
-          Type: Api
+          Type: HttpApi
           Properties:
             Path: /login
+            ApiId:
+              Ref: ApiGatewayApi
             Method: Post
   ProfileManagement:
     Type: AWS::Serverless::Function
@@ -46,14 +83,18 @@ Resources:
           TableName: Fitbit
       Events:
         ReadProfile:
-          Type: Api
+          Type: HttpApi
           Properties:
-            Path: /profile/{username}
+            Path: /profile
             Method: Get
+            ApiId:
+              Ref: ApiGatewayApi
         UpdateProfile:
-          Type: Api
+          Type: HttpApi
           Properties:
-            Path: /profile/{username}
+            Path: /profile
+            ApiId:
+              Ref: ApiGatewayApi
             Method: Post
   TermsOfService:
     Type: AWS::Serverless::Function
@@ -61,19 +102,11 @@ Resources:
       CodeUri: TermsOfService
       Events:
         CatchAll:
-          Type: Api
+          Type: HttpApi
           Properties:
             Path: /terms
-            Method: GET
-  LandingPage:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: LandingPage
-      Events:
-        CatchAll:
-          Type: Api
-          Properties:
-            Path: /
+            ApiId:
+              Ref: ApiGatewayApi
             Method: GET
   Oauth:
     Type: AWS::Serverless::Function
@@ -84,24 +117,30 @@ Resources:
           TableName: Fitbit
       Events:
         GetCode:
-          Type: Api
+          Type: HttpApi
           Properties:
             Path: /auth_code
+            ApiId:
+              Ref: ApiGatewayApi
             Method: GET
         Token:
-          Type: Api
+          Type: HttpApi
           Properties:
             Path: /webhook
             Method: GET
+            ApiId:
+              Ref: ApiGatewayApi
   PrivacyPolicy:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: PrivacyPolicy
       Events:
         CatchAll:
-          Type: Api
+          Type: HttpApi
           Properties:
             Path: /privacy
+            ApiId:
+              Ref: ApiGatewayApi
             Method: GET
   WebhookData:
     Type: AWS::Serverless::Function
@@ -112,12 +151,16 @@ Resources:
           TableName: Fitbit
       Events:
         CatchAll:
-          Type: Api
+          Type: HttpApi
           Properties:
             Path: /webhook_data
+            ApiId:
+              Ref: ApiGatewayApi
             Method: POST
         GetRequest:
-          Type: Api
+          Type: HttpApi
           Properties:
             Path: /webhook_data
             Method: GET
+            ApiId:
+              Ref: ApiGatewayApi

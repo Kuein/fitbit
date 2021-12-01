@@ -2,8 +2,11 @@ package main
 
 import (
 	"embed"
+	"encoding/base64"
 	"fmt"
+	"math/rand"
 	"net/url"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -21,6 +24,7 @@ var signupPage string
 
 //go:embed login.html
 var loginPage string
+var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 const (
 	tableName = "Fitbit"
@@ -34,13 +38,42 @@ type User struct {
 
 var svc = dynamodb.New(session.New())
 
-func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	fmt.Println(request)
-	pageKey := request.HTTPMethod + " " + request.Path
+func setSession(user User) string {
+	rand.Seed(time.Now().UnixNano())
+	b := make([]rune, 32)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	token := string(b)
+
+	input := &dynamodb.PutItemInput{
+		Item: map[string]*dynamodb.AttributeValue{
+			"primary":   {S: aws.String(token)},
+			"secondary": {S: aws.String("session")},
+			"username":  {S: aws.String(user.Username)},
+		},
+		TableName: aws.String("Fitbit"),
+	}
+
+	svc.PutItem(input)
+	return token
+}
+
+func decode64(str string) User {
+	arr, _ := base64.StdEncoding.DecodeString(str)
+	mm, _ := url.ParseQuery(string(arr))
+	return User{
+		Username: mm["username"][0],
+		Password: mm["password"][0],
+	}
+}
+
+func handler(request events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
+	pageKey := request.RouteKey
 	switch pageKey {
 	case "GET /signup":
 		{
-			return events.APIGatewayProxyResponse{
+			return events.APIGatewayV2HTTPResponse{
 				StatusCode: 200,
 				Headers: map[string]string{
 					"Content-Type": "text/html; charset=UTF-8",
@@ -50,7 +83,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		}
 	case "GET /login":
 		{
-			return events.APIGatewayProxyResponse{
+			return events.APIGatewayV2HTTPResponse{
 				StatusCode: 200,
 				Headers: map[string]string{
 					"Content-Type": "text/html; charset=UTF-8",
@@ -63,11 +96,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		// TODO: check users for existence
 		// TODO: confirm user somehow
 		{
-			vals, _ := url.ParseQuery(request.Body)
-			userData := User{
-				Username: vals["username"][0],
-				Password: vals["password"][0],
-			}
+			userData := decode64(request.Body)
 			input := &dynamodb.PutItemInput{
 				Item: map[string]*dynamodb.AttributeValue{
 					"primary":   {S: aws.String(userData.Username)},
@@ -78,15 +107,15 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 			}
 			_, err := svc.PutItem(input)
 			if err != nil {
-				return events.APIGatewayProxyResponse{
+				return events.APIGatewayV2HTTPResponse{
 					StatusCode: 301,
 					Headers:    map[string]string{"Location": ErrorPage},
 				}, err
 			}
 
-			return events.APIGatewayProxyResponse{
+			return events.APIGatewayV2HTTPResponse{
 				StatusCode: 301,
-				Headers:    map[string]string{"Location": "/Prod/profile/" + userData.Username},
+				Headers:    map[string]string{"Location": "/profile", "Set-Cookie": setSession(userData)},
 			}, nil
 
 		}
@@ -94,11 +123,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		// TODO: hash password
 		// TODO: implement 2FA
 		{
-			vals, _ := url.ParseQuery(request.Body)
-			userData := User{
-				Username: vals["username"][0],
-				Password: vals["password"][0],
-			}
+			userData := decode64(request.Body)
 			input := &dynamodb.GetItemInput{
 				Key: map[string]*dynamodb.AttributeValue{
 					"primary":   {S: aws.String(userData.Username)},
@@ -108,7 +133,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 			}
 			result, err := svc.GetItem(input)
 			if err != nil {
-				return events.APIGatewayProxyResponse{
+				return events.APIGatewayV2HTTPResponse{
 					StatusCode: 301,
 					Headers:    map[string]string{"Location": ErrorPage},
 				}, err
@@ -117,22 +142,22 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 			err = dynamodbattribute.UnmarshalMap(result.Item, &actual)
 
 			if actual.Password != userData.Password {
-				return events.APIGatewayProxyResponse{
+				return events.APIGatewayV2HTTPResponse{
 					StatusCode: 400,
 					Body:       "Wrong password",
 				}, err
 			}
 
-			return events.APIGatewayProxyResponse{
+			return events.APIGatewayV2HTTPResponse{
 				StatusCode: 301,
-				Headers:    map[string]string{"Location": "/Prod/profile/" + userData.Username},
+				Headers:    map[string]string{"Location": "/profile", "Set-Cookie": setSession(userData)},
 			}, nil
 
 		}
 	default:
 		{
 
-			return events.APIGatewayProxyResponse{
+			return events.APIGatewayV2HTTPResponse{
 				Body:       fmt.Sprintf("What exactly you want?"),
 				StatusCode: 200,
 			}, nil

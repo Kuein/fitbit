@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"embed"
+	"encoding/base64"
 	"fmt"
 	"net/url"
 	"text/template"
@@ -41,11 +42,46 @@ type Profile struct {
 
 var svc = dynamodb.New(session.New())
 
-func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+type Session struct {
+	SessionId string `dynamodbav:"primary"`
+	Username  string `dynamodbav:"username"`
+}
+
+type Character struct {
+	Experience string `json:"exp"`
+}
+
+func getUserNameFromSession(sess string) string {
+
+	input := &dynamodb.GetItemInput{
+		Key: map[string]*dynamodb.AttributeValue{
+			"primary":   {S: aws.String(sess)},
+			"secondary": {S: aws.String("session")},
+		},
+		TableName: aws.String("Fitbit"),
+	}
+
+	result, err := svc.GetItem(input)
+	if err != nil {
+		return ""
+	}
+	actual := Session{}
+	dynamodbattribute.UnmarshalMap(result.Item, &actual)
+
+	return actual.Username
+}
+
+func handler(request events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
 	fmt.Println(request)
-	username := request.PathParameters["username"]
-	switch request.HTTPMethod {
-	case "GET":
+	username := getUserNameFromSession(request.Cookies[0])
+	if username == "" {
+		return events.APIGatewayV2HTTPResponse{
+			StatusCode: 401,
+			Headers:    map[string]string{"Location": "/Prod/login"},
+		}, nil
+	}
+	switch request.RouteKey {
+	case "GET /profile":
 		{
 
 			input := &dynamodb.GetItemInput{
@@ -57,7 +93,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 			}
 			result, err := svc.GetItem(input)
 			if err != nil {
-				return events.APIGatewayProxyResponse{
+				return events.APIGatewayV2HTTPResponse{
 					StatusCode: 301,
 					Headers:    map[string]string{"Location": ErrorPage},
 				}, err
@@ -65,7 +101,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 			actual := Profile{}
 			err = dynamodbattribute.UnmarshalMap(result.Item, &actual)
 			if err != nil {
-				return events.APIGatewayProxyResponse{
+				return events.APIGatewayV2HTTPResponse{
 					StatusCode: 500,
 				}, err
 			}
@@ -73,7 +109,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 			t, _ := template.New("profile").Parse(profilePage)
 			_, actual.FitBit = result.Item["fitbit_auth"]
 			t.Execute(&buf, actual)
-			return events.APIGatewayProxyResponse{
+			return events.APIGatewayV2HTTPResponse{
 				StatusCode: 200,
 				Headers: map[string]string{
 					"Content-Type": "text/html; charset=UTF-8",
@@ -84,7 +120,8 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		}
 	default:
 		{
-			vals, _ := url.ParseQuery(request.Body)
+			arr, _ := base64.StdEncoding.DecodeString(request.Body)
+			vals, _ := url.ParseQuery(string(arr))
 			update := map[string]string{
 				"exp": vals["experience"][0],
 				"att": vals["attack"][0],
@@ -111,9 +148,9 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 				fmt.Printf("Update profile XP failed: %v\n", err)
 			}
 
-			return events.APIGatewayProxyResponse{
+			return events.APIGatewayV2HTTPResponse{
 				StatusCode: 301,
-				Headers:    map[string]string{"Location": "/Prod/profile/" + username},
+				Headers:    map[string]string{"Location": "/profile"},
 			}, nil
 
 		}

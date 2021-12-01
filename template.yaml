@@ -12,6 +12,26 @@ Globals:
     Tracing: Active
 
 Resources:
+  ApiGatewayApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Auth:
+        Authorizers:
+          LambdaAuth:
+            AuthorizerPayloadFormatVersion: 2.0
+            FunctionArn: !GetAtt Auth.Arn
+            EnableSimpleResponses: true    
+            Identity:
+              Headers:
+                - Cookie
+  Auth:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: auth/
+      Policies:
+        DynamoDBCrudPolicy:
+          TableName: Fitbit
+
   UserManagement:
     Type: AWS::Serverless::Function
     Properties:
@@ -20,25 +40,35 @@ Resources:
         DynamoDBCrudPolicy:
           TableName: Fitbit
       Events:
+        CatchAll:
+          Type: HttpApi
+          Properties:
+            Path: /
+            Method: get
+            ApiId: !Ref ApiGatewayApi
         SignUp:
-          Type: Api
+          Type: HttpApi
           Properties:
             Path: /signup
-            Method: Post
+            ApiId: !Ref ApiGatewayApi 
+            Method: post
         RenderSignup:
-          Type: Api
+          Type: HttpApi
           Properties:
+            ApiId: !Ref ApiGatewayApi 
             Path: /signup
-            Method: Get
+            Method: get
         RenderLogin:
-          Type: Api
+          Type: HttpApi
           Properties:
             Path: /login
+            ApiId: !Ref ApiGatewayApi 
             Method: Get
         Login:
-          Type: Api
+          Type: HttpApi
           Properties:
             Path: /login
+            ApiId: !Ref ApiGatewayApi 
             Method: Post
 
 
@@ -51,14 +81,16 @@ Resources:
           TableName: Fitbit
       Events:
         ReadProfile:
-          Type: Api
+          Type: HttpApi
           Properties:
-            Path: /profile/{username}
+            Path: /profile
             Method: Get
+            ApiId: !Ref ApiGatewayApi 
         UpdateProfile:
-          Type: Api
+          Type: HttpApi
           Properties:
-            Path: /profile/{username}
+            Path: /profile
+            ApiId: !Ref ApiGatewayApi 
             Method: Post
 
 
@@ -68,21 +100,12 @@ Resources:
       CodeUri: terms/
       Events:
         CatchAll:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
             Path: /terms
+            ApiId: !Ref ApiGatewayApi 
             Method: GET
 
-  LandingPage:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
-    Properties:
-      CodeUri: application_website/
-      Events:
-        CatchAll:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
-          Properties:
-            Path: /
-            Method: GET
 
   Oauth:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
@@ -93,15 +116,17 @@ Resources:
           TableName: Fitbit
       Events:
         GetCode:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
             Path: /auth_code
+            ApiId: !Ref ApiGatewayApi 
             Method: GET
         Token:
-          Type: Api
+          Type: HttpApi
           Properties:
             Path: /webhook
             Method: GET
+            ApiId: !Ref ApiGatewayApi 
 
   PrivacyPolicy:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
@@ -109,9 +134,10 @@ Resources:
       CodeUri: privacy/
       Events:
         CatchAll:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
             Path: /privacy
+            ApiId: !Ref ApiGatewayApi 
             Method: GET
 
   WebhookData:
@@ -123,12 +149,14 @@ Resources:
           TableName: Fitbit
       Events:
         CatchAll:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
             Path: /webhook_data
+            ApiId: !Ref ApiGatewayApi 
             Method: POST
         GetRequest:
-          Type: Api
+          Type: HttpApi
           Properties:
             Path: /webhook_data
             Method: GET
+            ApiId: !Ref ApiGatewayApi 
